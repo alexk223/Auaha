@@ -1,4 +1,28 @@
-<!DOCTYPE html>
+"""
+Auaha -- Build a Business, For Real
+------------------------------------
+A twelve-month business simulation game, built as a single self-contained
+HTML/CSS/JS file. Zero external dependencies (system fonts only, no CDN
+calls) so it works fully offline and on any platform/browser.
+
+Built for: Team Auaha, Smart Seeds Auckland 2026 (GHD innovation programme)
+
+How to use this file:
+  Run it with Python to write out the playable game as an .html file:
+      python3 auaha_game.py
+  Then open Auaha_Game.html in a real browser (see note on iPhone below).
+
+  Or just copy the AUAHA_GAME_HTML string below on its own, it is the
+  complete, valid HTML document, paste it into any tool (including
+  Gemini) that can read or render raw HTML/JS.
+
+Note on iPhone: tapping an .html file directly in the Files/Messages/Mail
+app often opens it in QuickLook, a lightweight preview that does not run
+JavaScript properly. Use Share -> Open in Safari, or host the file and
+visit it as a URL, for the game to work as intended.
+"""
+
+AUAHA_GAME_HTML = r"""<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -251,7 +275,7 @@ const PROFESSIONS = [
 ];
 
 const BUSINESSES = [
-  { id: 'acai', name: 'Frozen Acai Import & Distribution', unit: 'kg', costPerUnit: 12.05, pricePerUnit: 18, setupCost: 4000, baseUnitsPerMonth: 150, category: 'Import & Distribution', categoryArticle: 'an', blurb: 'Import frozen acai, distribute to cafes and stalls. Real margins, real cold-chain risk.' },
+  { id: 'blueberry', name: 'Frozen blueberry Import & Distribution', unit: 'kg', costPerUnit: 12.05, pricePerUnit: 18, setupCost: 4000, baseUnitsPerMonth: 150, category: 'Import & Distribution', categoryArticle: 'an', blurb: 'Import frozen blueberry, distribute to cafes and stalls. Real margins, real cold-chain risk.' },
   { id: 'coffee', name: 'Mobile Coffee Cart', unit: 'cup', costPerUnit: 2.20, pricePerUnit: 5.50, setupCost: 6500, baseUnitsPerMonth: 300, category: 'Food & Beverage', categoryArticle: 'a', blurb: 'A cart, a machine, and foot traffic. Simple product, real equipment cost upfront.' },
   { id: 'content', name: 'Social Content & Marketing Services', unit: 'client package', costPerUnit: 40, pricePerUnit: 220, setupCost: 800, baseUnitsPerMonth: 6, category: 'Services', categoryArticle: 'a', blurb: 'Sell your time and skill, not a product. Lowest setup cost, fewest customers needed.' },
   { id: 'lawn', name: 'Lawn & Garden Care', unit: 'job', costPerUnit: 8, pricePerUnit: 65, setupCost: 3200, baseUnitsPerMonth: 20, category: 'Trades-Based', categoryArticle: 'a', blurb: 'Your own equipment, your own hours, one job at a time.' }
@@ -263,7 +287,7 @@ const EVENTS = [
   { id:'referral', title:'Word of Mouth', desc:'A happy customer sends new business your way.', tone:'good', demandMult:1.3, demandMonths:1 },
   { id:'press', title:'Local Media Mention', desc:'A community page features your stall.', tone:'good', demandMult:1.5, demandMonths:1 },
   { id:'breakdown', title:'Equipment Breakdown', desc:'An unexpected repair bill lands this month.', tone:'bad', oneOffCost:350 },
-  { id:'currency', title:'Exchange Rate Shift', desc:'The dollar moves against you, import costs rise for two months.', tone:'bad', costMult:1.2, costMonths:2, onlyFor:['acai'] },
+  { id:'currency', title:'Exchange Rate Shift', desc:'The dollar moves against you, import costs rise for two months.', tone:'bad', costMult:1.2, costMonths:2, onlyFor:['blueberry'] },
   { id:'lateclient', title:'Late Payment', desc:"A client pays 30 days late, squeezing this month's cash.", tone:'bad', oneOffCost:300 },
   { id:'gridakl', title:'GridAKL Coaching Session', desc:'A free coaching session helps you tighten up how you operate.', tone:'good', demandMult:1.15, demandMonths:2, agency:'GridAKL' },
   { id:'kingstrust', title:"King's Trust Kia Tupu Grant", desc:'Cash is tight, and you qualify for a small top-up grant.', tone:'good', cashDelta:500, agency:"King's Trust", onlyIfCashBelow:1500 },
@@ -941,3 +965,15 @@ render();
 </script>
 </body>
 </html>
+"""
+
+
+def save_game(output_path="Auaha_Game.html"):
+    """Write the embedded game out to a standalone HTML file."""
+    with open(output_path, "w", encoding="utf-8") as f:
+        f.write(AUAHA_GAME_HTML)
+    print(f"Saved playable game to {output_path}")
+
+
+if __name__ == "__main__":
+    save_game()
