@@ -1,25 +1,26 @@
 """
 Auaha -- Build a Business, For Real
 ------------------------------------
-A twelve-month business simulation game, built as a single self-contained
-HTML/CSS/JS file. Zero external dependencies (system fonts only, no CDN
-calls) so it works fully offline and on any platform/browser.
+A twelve-month business simulation game, self-contained single HTML file,
+zero external dependencies (system fonts only, no CDN calls, works offline).
 
 Built for: Team Auaha, Smart Seeds Auckland 2026 (GHD innovation programme)
 
+Choose a difficulty (Beginner / Intermediate / Advanced), a starting
+profession, and one of eight business ideas, then play through 12 months
+of real cash flow, staffing, and a real NZ provisional/terminal tax cycle.
+Advanced difficulty adds a much larger pool of macro events: interest
+rate moves, war, natural disasters, recessions, booms, currency swings.
+
 How to use this file:
-  Run it with Python to write out the playable game as an .html file:
-      python3 auaha_game.py
-  Then open Auaha_Game.html in a real browser (see note on iPhone below).
+  python3 auaha_game.py        # writes Auaha_Game.html
+  Then open it in a real browser (see iPhone note below).
 
-  Or just copy the AUAHA_GAME_HTML string below on its own, it is the
-  complete, valid HTML document, paste it into any tool (including
-  Gemini) that can read or render raw HTML/JS.
+Note on iPhone: tapping an .html file directly in Files/Messages/Mail
+often opens it in QuickLook, which does not run JavaScript properly.
+Use Share -> Open in Safari, or host the file and visit it as a URL.
 
-Note on iPhone: tapping an .html file directly in the Files/Messages/Mail
-app often opens it in QuickLook, a lightweight preview that does not run
-JavaScript properly. Use Share -> Open in Safari, or host the file and
-visit it as a URL, for the game to work as intended.
+Feedback: alexkurian@live.com (also linked inside the game itself).
 """
 
 AUAHA_GAME_HTML = r"""<!DOCTYPE html>
@@ -111,6 +112,13 @@ AUAHA_GAME_HTML = r"""<!DOCTYPE html>
 
   .hero-sub { font-family: var(--font-epic); font-style: italic; font-size: 1.3rem; color: var(--gold); margin-top: -6px; letter-spacing: 0.02em; }
   .lede { font-size: 1.08rem; max-width: 54ch; color: #e8e3d6; }
+  .feedback-link { margin-top: 26px; font-size: 0.85rem; }
+  .feedback-link a { color: #b9c9c6; text-decoration: underline; }
+  .feedback-link a:hover { color: var(--gold); }
+  .calc-block { background: white; border-radius: 8px; padding: 14px 16px; margin: 14px 0; font-size: 0.92rem; }
+  .calc-line { padding: 3px 0; color: #52564f; }
+  .calc-line.calc-total { border-top: 1px solid var(--card-border); margin-top: 6px; padding-top: 8px; font-weight: 700; color: var(--ink); font-size: 1rem; }
+  .tip-callout { background: #eef4f2; border-left: 4px solid var(--teal); padding: 10px 14px; font-size: 0.9rem; color: #33453f; border-radius: 4px; }
   .section-lede { color: #3a3f3c; max-width: 60ch; }
 
   .btn-primary {
@@ -275,25 +283,42 @@ const PROFESSIONS = [
 ];
 
 const BUSINESSES = [
-  { id: 'blueberry', name: 'Frozen blueberry Import & Distribution', unit: 'kg', costPerUnit: 12.05, pricePerUnit: 18, setupCost: 4000, baseUnitsPerMonth: 150, category: 'Import & Distribution', categoryArticle: 'an', blurb: 'Import frozen blueberry, distribute to cafes and stalls. Real margins, real cold-chain risk.' },
   { id: 'coffee', name: 'Mobile Coffee Cart', unit: 'cup', costPerUnit: 2.20, pricePerUnit: 5.50, setupCost: 6500, baseUnitsPerMonth: 300, category: 'Food & Beverage', categoryArticle: 'a', blurb: 'A cart, a machine, and foot traffic. Simple product, real equipment cost upfront.' },
+  { id: 'produce', name: 'Farmers Market Produce Stall', unit: 'box', costPerUnit: 8, pricePerUnit: 14, setupCost: 2200, baseUnitsPerMonth: 160, category: 'Food & Beverage', categoryArticle: 'a', blurb: 'Local vegetable boxes at the weekend market. No import risk, but the weather still decides your weekend.' },
   { id: 'content', name: 'Social Content & Marketing Services', unit: 'client package', costPerUnit: 40, pricePerUnit: 220, setupCost: 800, baseUnitsPerMonth: 6, category: 'Services', categoryArticle: 'a', blurb: 'Sell your time and skill, not a product. Lowest setup cost, fewest customers needed.' },
-  { id: 'lawn', name: 'Lawn & Garden Care', unit: 'job', costPerUnit: 8, pricePerUnit: 65, setupCost: 3200, baseUnitsPerMonth: 20, category: 'Trades-Based', categoryArticle: 'a', blurb: 'Your own equipment, your own hours, one job at a time.' }
+  { id: 'photography', name: 'Event Photography', unit: 'gig', costPerUnit: 60, pricePerUnit: 350, setupCost: 3500, baseUnitsPerMonth: 3, category: 'Services', categoryArticle: 'an', blurb: 'Weddings, birthdays, corporate events. Real camera gear cost upfront, high margin per booking.' },
+  { id: 'petcare', name: 'Dog Walking & Pet Sitting', unit: 'walk', costPerUnit: 0, pricePerUnit: 28, setupCost: 300, baseUnitsPerMonth: 35, category: 'Services', categoryArticle: 'a', blurb: 'Selling your time and reliability, almost nothing else. The lowest barrier to entry here by far.' },
+  { id: 'lawn', name: 'Lawn & Garden Care', unit: 'job', costPerUnit: 8, pricePerUnit: 65, setupCost: 3200, baseUnitsPerMonth: 20, category: 'Trades-Based', categoryArticle: 'a', blurb: 'Your own equipment, your own hours, one job at a time.' },
+  { id: 'detailing', name: 'Mobile Car Detailing', unit: 'car', costPerUnit: 12, pricePerUnit: 85, setupCost: 2800, baseUnitsPerMonth: 14, category: 'Trades-Based', categoryArticle: 'a', blurb: 'You go to them. A pressure washer and a good reputation do most of the work.' },
+  { id: 'candles', name: 'Handmade Candles & Home Goods', unit: 'candle', costPerUnit: 6, pricePerUnit: 22, setupCost: 1500, baseUnitsPerMonth: 65, category: 'Retail & Maker', categoryArticle: 'a', blurb: 'Made in small batches, sold at markets and online. Materials cost is real, but so is the margin.' }
 ];
 
-const EVENTS = [
+const BASE_EVENTS = [
   { id:'inflation', title:'Inflation Spike', desc:'Your supply costs jump for the next two months.', tone:'bad', costMult:1.15, costMonths:2 },
   { id:'slow', title:'Slow Season', desc:'Demand drops off for one month.', tone:'bad', demandMult:0.7, demandMonths:1 },
   { id:'referral', title:'Word of Mouth', desc:'A happy customer sends new business your way.', tone:'good', demandMult:1.3, demandMonths:1 },
   { id:'press', title:'Local Media Mention', desc:'A community page features your stall.', tone:'good', demandMult:1.5, demandMonths:1 },
   { id:'breakdown', title:'Equipment Breakdown', desc:'An unexpected repair bill lands this month.', tone:'bad', oneOffCost:350 },
-  { id:'currency', title:'Exchange Rate Shift', desc:'The dollar moves against you, import costs rise for two months.', tone:'bad', costMult:1.2, costMonths:2, onlyFor:['blueberry'] },
+  { id:'currency', title:'Exchange Rate Shift', desc:'The dollar moves against you, the cost of imported supplies rises for two months.', tone:'bad', costMult:1.2, costMonths:2, onlyFor:['coffee','candles','photography'] },
   { id:'lateclient', title:'Late Payment', desc:"A client pays 30 days late, squeezing this month's cash.", tone:'bad', oneOffCost:300 },
   { id:'gridakl', title:'GridAKL Coaching Session', desc:'A free coaching session helps you tighten up how you operate.', tone:'good', demandMult:1.15, demandMonths:2, agency:'GridAKL' },
   { id:'kingstrust', title:"King's Trust Kia Tupu Grant", desc:'Cash is tight, and you qualify for a small top-up grant.', tone:'good', cashDelta:500, agency:"King's Trust", onlyIfCashBelow:1500 },
   { id:'keaconnect', title:'Kea Connect Mentor Call', desc:'An overseas mentor spots a quick efficiency win in your costs.', tone:'good', costMult:0.9, costMonths:1, agency:'Kea Connect' },
   { id:'compliance', title:'Council Compliance Check', desc:'A missed detail costs you a small fine.', tone:'bad', oneOffCost:150 },
   { id:'bulk', title:'Bulk Order Opportunity', desc:'A big one-off order is on the table this month.', tone:'good', demandMult:1.8, demandMonths:1 }
+];
+
+const ADVANCED_EVENTS = [
+  { id:'ratehike', title:'Interest Rates Rise', desc:'The Reserve Bank lifts the official cash rate, borrowing and overheads get more expensive right across the economy.', tone:'bad', costMult:1.25, costMonths:3 },
+  { id:'ratecut', title:'Interest Rates Fall', desc:'Rates come down. Costs ease and customers feel a little richer.', tone:'good', costMult:0.88, costMonths:2, demandMult:1.1, demandMonths:2 },
+  { id:'war', title:'Overseas Conflict Disrupts Trade', desc:'A conflict a long way away still finds its way into shipping and supply costs.', tone:'bad', costMult:1.35, costMonths:3 },
+  { id:'disaster', title:'Natural Disaster', desc:'A major storm or earthquake disrupts the whole region for a while.', tone:'bad', oneOffCost:1200, demandMult:0.6, demandMonths:2 },
+  { id:'recession', title:'Recession Hits', desc:'Consumer spending drops right across the economy, not just for you.', tone:'bad', demandMult:0.65, demandMonths:3 },
+  { id:'boom', title:'Economic Boom', desc:'Confidence is high and people are spending freely.', tone:'good', demandMult:1.45, demandMonths:2 },
+  { id:'inflationsurge', title:'Inflation Surge', desc:'Prices are rising fast across the whole economy, well beyond your own costs.', tone:'bad', costMult:1.3, costMonths:3 },
+  { id:'currencycrisis', title:'Currency Crisis', desc:'The New Zealand dollar drops sharply against almost everyone you buy from.', tone:'bad', costMult:1.4, costMonths:2 },
+  { id:'exportboom', title:'Export Demand Surges', desc:'Overseas buyers suddenly want what New Zealand makes, and that lifts spending everywhere a little.', tone:'good', demandMult:1.3, demandMonths:2 },
+  { id:'supplychain', title:'Supply Chain Collapse', desc:'A global shipping crisis makes basic supplies hard to get at any price.', tone:'bad', costMult:1.3, costMonths:2, oneOffCost:200 }
 ];
 
 const STAFF_MONTHLY_COST = 800;
@@ -335,9 +360,30 @@ function fmtUnit(n) {
   return '$' + n.toFixed(2);
 }
 
+function gloss(term, explanation) {
+  return state.difficulty === 'advanced' ? term : `${term} (${explanation})`;
+}
+
+function tip(beginnerOnlyText) {
+  return state.difficulty === 'beginner' ? `<p class="tip-callout">${beginnerOnlyText}</p>` : '';
+}
+
 // ============ CORE LOGIC (tested standalone before wiring to the UI) ============
+const DIFFICULTIES = [
+  { id: 'beginner', name: 'Beginner', blurb: 'Extra guidance at every step. Gentler ups and downs. A calmer first year to learn the shape of the game.' },
+  { id: 'intermediate', name: 'Intermediate', blurb: 'The real numbers, explained once, no extra hand-holding after that. The standard way to play.' },
+  { id: 'advanced', name: 'Advanced', blurb: 'Real volatility: interest rate moves, war, natural disasters, recessions, booms, currency swings. Minimal hints, maximum realism.' }
+];
+
+const VARIANCE_RANGES = {
+  beginner: [0.94, 1.10],
+  intermediate: [0.85, 1.15],
+  advanced: [0.70, 1.30]
+};
+
 function pickEvent(state) {
-  const pool = EVENTS.filter(e => {
+  let pool = state.difficulty === 'advanced' ? BASE_EVENTS.concat(ADVANCED_EVENTS) : BASE_EVENTS;
+  pool = pool.filter(e => {
     if (e.onlyFor && !e.onlyFor.includes(state.business.id)) return false;
     if (e.onlyIfCashBelow !== undefined && state.cash >= e.onlyIfCashBelow) return false;
     return true;
@@ -345,9 +391,9 @@ function pickEvent(state) {
   return pool[Math.floor(Math.random() * pool.length)];
 }
 
-function makeState(profession, business) {
+function makeState(profession, business, difficulty) {
   return {
-    profession, business,
+    profession, business, difficulty,
     cash: 0,
     month: 0,
     demandMult: 1, demandMonthsLeft: 0,
@@ -404,7 +450,8 @@ function computeMonth(state, event) {
   if (event.demandMult) { state.demandMult = event.demandMult; state.demandMonthsLeft = event.demandMonths; }
   if (event.costMult) { state.costMult = event.costMult; state.costMonthsLeft = event.costMonths; }
 
-  const variance = 0.85 + Math.random() * 0.3;
+  const [lo, hi] = VARIANCE_RANGES[state.difficulty] || VARIANCE_RANGES.intermediate;
+  const variance = lo + Math.random() * (hi - lo);
   const units = Math.max(0, Math.round(state.business.baseUnitsPerMonth * state.demandMult * variance));
   const costPerUnitNow = state.business.costPerUnit * state.costMult;
   const revenue = Math.round(units * state.business.pricePerUnit);
@@ -464,8 +511,25 @@ function renderIntro() {
       ${LAUREL_SVG}
       <div class="epic-divider"></div>
       <p class="hero-sub">Build a business, for real</p>
-      <p class="lede">Twelve months, one idea, real New Zealand numbers. Choose who you are, choose what you're building, and find out what it actually takes to get from a plan to a first sale: money in and out each month, tax, hiring help, and the setbacks nobody warns you about.</p>
-      <button class="btn-primary" onclick="goToProfession()">Start your year</button>
+      <p class="lede">Twelve months. One idea. Real numbers. Find out what it actually takes.</p>
+      <button class="btn-primary" onclick="goToDifficulty()">Start your year</button>
+      <p class="feedback-link"><a href="mailto:alexkurian@live.com?subject=Auaha%20Game%20Feedback">Send feedback on this game</a></p>
+    </div>
+  `;
+}
+
+function renderDifficultySelect() {
+  const cards = DIFFICULTIES.map(d => `
+    <button class="pick-card" onclick="chooseDifficulty('${d.id}')">
+      <span class="pick-card-name">${d.name}</span>
+      <span class="pick-card-blurb">${d.blurb}</span>
+    </button>
+  `).join('');
+  return `
+    <div class="wrap">
+      <h2>How do you want to play?</h2>
+      <p class="section-lede">This sets how much explaining the game does for you, and how rough the year gets.</p>
+      <div class="pick-grid">${cards}</div>
     </div>
   `;
 }
@@ -518,6 +582,7 @@ function renderSetup() {
         <h2>Ready to open up</h2>
         <p class="section-lede">${state.profession.name}, starting cash ${fmtWhole(state.profession.startCash)}, minus ${fmtWhole(state.business.setupCost)} to set up ${state.business.name}.</p>
         <p class="big-number">${fmtWhole(startCash)}<span class="big-number-label">left to start month one</span></p>
+        ${tip("This is your real starting position: what you had, minus what it cost just to open the doors. Everything from here is what you do with what's left.")}
         <button class="btn-primary" onclick="resolveCapital('none')">Begin year one</button>
       </div>
     `;
@@ -526,6 +591,7 @@ function renderSetup() {
     <div class="wrap narrow">
       <h2>You're short ${fmtWhole(gap)}</h2>
       <p class="section-lede">${state.business.name} costs ${fmtWhole(state.business.setupCost)} to set up. You're starting with ${fmtWhole(state.profession.startCash)}. This is the moment every founder in your position actually faces.</p>
+      ${tip("Neither option here is wrong. Bootstrapping keeps you independent but slower. Taking a grant gets you moving faster but means one more relationship to keep up. Real founders make this exact call all the time.")}
       <div class="choice-row">
         <button class="choice-card" onclick="resolveCapital('bootstrap')">
           <span class="choice-title">Bootstrap smaller</span>
@@ -617,8 +683,8 @@ function renderReport() {
 
   const registeredForGst = totalRevenue > GST_THRESHOLD;
   const gstNote = registeredForGst
-    ? `Total sales of ${fmtWhole(totalRevenue)} passed the ${fmtWhole(GST_THRESHOLD)} line where GST (Goods and Services Tax, a 15% tax added to sales) registration becomes compulsory, partway through the year this business would need to start charging it.`
-    : `Total sales of ${fmtWhole(totalRevenue)} stayed comfortably under the ${fmtWhole(GST_THRESHOLD)} line where GST (Goods and Services Tax, a 15% tax added to sales) registration becomes compulsory, no GST admin needed yet.`;
+    ? `Total sales of ${fmtWhole(totalRevenue)} passed the ${fmtWhole(GST_THRESHOLD)} line where ${gloss('GST','Goods and Services Tax, a 15% tax added to sales')} registration becomes compulsory, partway through the year this business would need to start charging it.`
+    : `Total sales of ${fmtWhole(totalRevenue)} stayed comfortably under the ${fmtWhole(GST_THRESHOLD)} line where ${gloss('GST','Goods and Services Tax, a 15% tax added to sales')} registration becomes compulsory, no GST admin needed yet.`;
 
   const execSummary = `${state.business.name} is ${state.business.categoryArticle} ${state.business.category.toLowerCase()} business selling ${state.business.unit}s at ${fmtUnit(state.business.pricePerUnit)} each. Started by ${state.profession.article} ${state.profession.name.toLowerCase()} with ${fmtWhole(state.profession.startCash)} to begin with, it brought in ${fmtWhole(totalRevenue)} in its first year and closed the year with ${fmtWhole(totalNet)} in net profit, ${breakEvenMonth ? `breaking even by month ${breakEvenMonth}` : 'not yet reaching break-even within the first year'}. The plan from here is to ${growthText}`;
 
@@ -643,7 +709,7 @@ function renderReport() {
         <div class="report-section">
           <h3>Business details</h3>
           <table class="ledger">
-            <tr><td>Structure</td><td>Sole trader (a business owned and run by one person)</td></tr>
+            <tr><td>Structure</td><td>${gloss('Sole trader','a business owned and run by one person')}</td></tr>
             <tr><td>Selling price</td><td>${fmtUnit(state.business.pricePerUnit)} per ${state.business.unit}</td></tr>
             <tr><td>Cost to produce</td><td>${fmtUnit(state.business.costPerUnit)} per ${state.business.unit}</td></tr>
             <tr><td>Started with</td><td>${fmtWhole(state.profession.startCash)} (as ${state.profession.article} ${state.profession.name.toLowerCase()})</td></tr>
@@ -670,7 +736,7 @@ function renderReport() {
 
           <p style="margin-top:18px;"><strong>Cost forecast, year one</strong></p>
           <table class="ledger">
-            <tr><td>Cost of goods sold (what it cost to make or get everything you sold)</td><td>${fmtWhole(totalCogs)}</td></tr>
+            <tr><td>${gloss('Cost of goods sold','what it cost to make or get everything you sold')}</td><td>${fmtWhole(totalCogs)}</td></tr>
             <tr><td>Staffing</td><td>${fmtWhole(totalStaffCost)}</td></tr>
             <tr><td>One-off costs from events</td><td>${fmtWhole(totalOneOff)}</td></tr>
             <tr><td>Start-up capital</td><td>${fmtWhole(state.business.setupCost)}</td></tr>
@@ -684,7 +750,7 @@ function renderReport() {
           </table>
 
           <div class="report-callout" style="margin-top:14px;">
-            <strong>Break-even</strong> (the point where you've earned back what you were spending): ${breakEvenMonth ? `reached in month ${breakEvenMonth} of trading.` : 'not reached within the first twelve months.'}<br>
+            <strong>${gloss('Break-even','the point where you\'ve earned back what you were spending')}</strong>: ${breakEvenMonth ? `reached in month ${breakEvenMonth} of trading.` : 'not reached within the first twelve months.'}<br>
             <strong>Cashflow:</strong> monthly results ranged from ${fmtWhole(minNet)} in the worst month to ${fmtWhole(maxNet)} in the best, real swings a plan needs to hold cash against.
           </div>
         </div>
@@ -703,7 +769,7 @@ function renderReport() {
         </div>
 
         <div class="report-section">
-          <h3>SWOT snapshot <span style="font-weight:400; font-size:0.8rem; color:#7a7d76;">(Strengths, Weaknesses, Opportunities, Threats, optional, in your own words)</span></h3>
+          <h3>SWOT snapshot ${state.difficulty !== "advanced" ? '<span style="font-weight:400; font-size:0.8rem; color:#7a7d76;">(Strengths, Weaknesses, Opportunities, Threats, optional, in your own words)</span>' : ''}</h3>
           <div class="swot-grid">
             <div class="swot-field">
               <label class="stat-label">Strength</label>
@@ -751,6 +817,7 @@ function renderReport() {
         <div class="report-actions no-print">
           <button class="btn-primary" onclick="window.print()">Save as PDF</button>
           <button class="btn-secondary" onclick="restartGame()">Play again</button>
+          <a href="mailto:alexkurian@live.com?subject=Auaha%20Game%20Feedback&body=I%20played%20as%20a%20${encodeURIComponent(state.profession.name)}%20running%20${encodeURIComponent(state.business.name)}%20on%20${state.difficulty}%20difficulty..." class="btn-secondary" style="text-decoration:none; display:inline-flex; align-items:center;">Send feedback</a>
         </div>
       </div>
     </div>
@@ -760,14 +827,22 @@ function renderReport() {
 // ============ RENDER: MODALS ============
 function eventModalHtml(event) {
   const monthData = state.history[state.history.length - 1];
+  const u = state.business.unit;
+  const plural = monthData.units === 1 ? '' : 's';
+  const lines = [];
+  lines.push(`${monthData.units} ${u}${plural} &times; ${fmtUnit(state.business.pricePerUnit)} = <strong>${fmtWhole(monthData.revenue)}</strong> revenue`);
+  lines.push(`${monthData.units} ${u}${plural} &times; ${fmtUnit(state.business.costPerUnit)} = <strong>${fmtWhole(monthData.cogs)}</strong> cost of goods`);
+  if (monthData.staffCost > 0) lines.push(`&minus; ${fmtWhole(monthData.staffCost)} staffing`);
+  if (monthData.oneOff > 0) lines.push(`&minus; ${fmtWhole(monthData.oneOff)} from this event`);
+  if (monthData.cashDelta > 0) lines.push(`+ ${fmtWhole(monthData.cashDelta)} from this event`);
+
   return `
     <span class="modal-kicker">Month ${state.month}</span>
     <h3>${event.title}</h3>
     <p>${event.desc}</p>
-    <div class="modal-figures">
-      <div><span class="stat-label">Sold</span><span class="stat-value">${monthData.units} ${state.business.unit}s</span></div>
-      <div><span class="stat-label">Revenue</span><span class="stat-value">${fmtWhole(monthData.revenue)}</span></div>
-      <div><span class="stat-label">Net this month</span><span class="stat-value ${monthData.net<0?'neg':'pos'}">${fmtWhole(monthData.net)}</span></div>
+    <div class="calc-block">
+      ${lines.map(l => `<div class="calc-line">${l}</div>`).join('')}
+      <div class="calc-line calc-total">= ${fmtWhole(monthData.net)} net this month</div>
     </div>
     <button class="btn-primary" onclick="advanceModal()">Continue</button>
   `;
@@ -805,6 +880,7 @@ function complianceModalHtml(result) {
     <h3>Provisional tax instalment</h3>
     <p>Running profit for the year has passed ${fmtWhole(TAX_THRESHOLD)}, so provisional tax kicks in, that's paying some of next year's tax bill early, in instalments, based on how well this year is going. An instalment is due now.</p>
     <p class="big-number neg">${fmtWhole(result.instalment)}<span class="big-number-label">set aside for IRD</span></p>
+    ${tip("This is a completely normal part of running a profitable business, not a penalty. It just means IRD wants some of next year's tax a little early.")}
     <button class="btn-primary" onclick="advanceModal()">Continue</button>
   `;
 }
@@ -861,6 +937,7 @@ function triggerGoodFlash() {
 function render() {
   const app = document.getElementById('app');
   if (gamePhase === 'intro') app.innerHTML = renderIntro();
+  else if (gamePhase === 'difficulty') app.innerHTML = renderDifficultySelect();
   else if (gamePhase === 'profession') app.innerHTML = renderProfessionSelect();
   else if (gamePhase === 'business') app.innerHTML = renderBusinessSelect();
   else if (gamePhase === 'setup') app.innerHTML = renderSetup();
@@ -869,14 +946,22 @@ function render() {
 }
 
 // ============ FLOW CONTROL ============
-function goToProfession() {
+let pendingDifficulty = null;
+
+function goToDifficulty() {
+  gamePhase = 'difficulty';
+  render();
+}
+
+function chooseDifficulty(id) {
+  pendingDifficulty = id;
   gamePhase = 'profession';
   render();
 }
 
 function chooseProfession(id) {
   const profession = PROFESSIONS.find(p => p.id === id);
-  state = makeState(profession, null);
+  state = makeState(profession, null, pendingDifficulty);
   gamePhase = 'business';
   render();
 }
