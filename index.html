@@ -1,28 +1,3 @@
-"""
-Auaha -- Build a Business, For Real
-------------------------------------
-A twelve-month business simulation game, self-contained single HTML file,
-zero external dependencies (system fonts only, no CDN calls, works offline).
-
-Built for: Team Auaha, Smart Seeds Auckland 2026 (GHD innovation programme)
-
-Choose a difficulty (Beginner / Intermediate / Advanced), a starting
-profession, and one of eight business ideas, then play through 12 months
-of real cash flow, staffing, and a real NZ provisional/terminal tax cycle.
-Advanced difficulty adds a much larger pool of macro events: interest
-rate moves, war, natural disasters, recessions, booms, currency swings.
-
-How to use this file:
-  python3 auaha_game.py        # writes Auaha_Game.html
-  Then open it in a real browser (see iPhone note below).
-
-Note on iPhone: tapping an .html file directly in Files/Messages/Mail
-often opens it in QuickLook, which does not run JavaScript properly.
-Use Share -> Open in Safari, or host the file and visit it as a URL.
-
-Feedback: alexkurian@live.com (also linked inside the game itself).
-"""
-
 AUAHA_GAME_HTML = r"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -115,9 +90,19 @@ AUAHA_GAME_HTML = r"""<!DOCTYPE html>
   .feedback-link { margin-top: 26px; font-size: 0.85rem; }
   .feedback-link a { color: #b9c9c6; text-decoration: underline; }
   .feedback-link a:hover { color: var(--gold); }
+  #build-footer {
+    position: fixed; bottom: 8px; right: 14px; z-index: 40;
+    font-size: 0.72rem; color: rgba(232,227,214,0.55); letter-spacing: 0.03em;
+    pointer-events: none;
+  }
   .calc-block { background: white; border-radius: 8px; padding: 14px 16px; margin: 14px 0; font-size: 0.92rem; }
-  .calc-line { padding: 3px 0; color: #52564f; }
-  .calc-line.calc-total { border-top: 1px solid var(--card-border); margin-top: 6px; padding-top: 8px; font-weight: 700; color: var(--ink); font-size: 1rem; }
+  .calc-line.calc-total { margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid var(--card-border); font-weight: 700; color: var(--ink); font-size: 1.08rem; }
+  .calc-margin-tag { display: inline-block; background: var(--card); color: var(--teal); border-radius: 12px; padding: 2px 10px; font-size: 0.82rem; font-weight: 700; margin-left: 6px; }
+  .calc-table { width: 100%; border-collapse: collapse; }
+  .calc-table td { padding: 5px 0; font-size: 0.88rem; vertical-align: baseline; }
+  .calc-td-label { color: var(--ink); font-weight: 600; white-space: nowrap; padding-right: 10px; }
+  .calc-td-working { color: #8a8d85; font-size: 0.85rem; }
+  .calc-td-amount { color: var(--ink); font-weight: 600; text-align: right; white-space: nowrap; padding-left: 10px; }
   .tip-callout { background: #eef4f2; border-left: 4px solid var(--teal); padding: 10px 14px; font-size: 0.9rem; color: #33453f; border-radius: 4px; }
   .section-lede { color: #3a3f3c; max-width: 60ch; }
 
@@ -232,6 +217,8 @@ AUAHA_GAME_HTML = r"""<!DOCTYPE html>
   .report-section h3 { border-left: 5px solid var(--red); padding-left: 10px; }
   .report-callout { background: var(--card); border-left: 5px solid var(--teal); padding: 14px 18px; border-radius: 6px; }
   .agency-chip { display: inline-block; background: var(--teal); color: white; border-radius: 20px; padding: 5px 14px; font-size: 0.82rem; margin: 3px 6px 3px 0; }
+  .disclosure-block { border-top: 2px solid var(--card-border); padding-top: 16px; }
+  .disclosure-block p { font-size: 0.8rem; color: #8a8d85; font-style: italic; }
   .report-actions { display: flex; gap: 14px; margin-top: 30px; }
   .total-row td { font-weight: 700; border-top: 2px solid var(--teal); }
 
@@ -271,6 +258,7 @@ AUAHA_GAME_HTML = r"""<!DOCTYPE html>
       <path d="M50,20 L54,42 L76,50 L54,58 L50,80 L46,58 L24,50 L46,42 Z" fill="#CBA135"/>
     </svg>
   </div>
+  <div id="build-footer" class="no-print"></div>
 
 <script>
 // ============ DATA ============
@@ -321,6 +309,13 @@ const ADVANCED_EVENTS = [
   { id:'supplychain', title:'Supply Chain Collapse', desc:'A global shipping crisis makes basic supplies hard to get at any price.', tone:'bad', costMult:1.3, costMonths:2, oneOffCost:200 }
 ];
 
+const CATEGORY_BENCHMARKS = {
+  'Food & Beverage': { range: '3\u201310%', note: 'New Zealand cafes and food stalls typically run thin net margins once every cost is counted, even when the mark-up on a single item looks generous.' },
+  'Services': { range: '18\u201340%', note: 'Personal and professional services generally see the best margins of any small business type, since there is little or no physical product to pay for.' },
+  'Trades-Based': { range: '15\u201325%', note: 'Trades and equipment-based businesses typically land in this range once fuel, equipment wear, and time are properly costed in.' },
+  'Retail & Maker': { range: '10\u201320%', note: 'Retail and maker businesses selling a physical product usually see this range after materials, market fees, and packaging.' }
+};
+
 const STAFF_MONTHLY_COST = 800;
 
 const LAUREL_SVG = `<svg class="laurel" viewBox="0 0 360 90" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -350,6 +345,7 @@ const TAX_THRESHOLD = 5000;
 const TAX_RATE = 0.28;
 const KINGS_TRUST_CAP = 5000;
 const GST_THRESHOLD = 60000;
+const GAME_VERSION = 'v1.5';
 
 // ============ FORMATTERS ============
 function fmtWhole(n) {
@@ -362,6 +358,12 @@ function fmtUnit(n) {
 
 function gloss(term, explanation) {
   return state.difficulty === 'advanced' ? term : `${term} (${explanation})`;
+}
+
+function marginPct(net, revenue) {
+  if (!revenue) return '—';
+  const pct = Math.round(net / revenue * 100);
+  return `${pct}%`;
 }
 
 function tip(beginnerOnlyText) {
@@ -607,15 +609,32 @@ function renderSetup() {
 }
 
 function renderBoard() {
-  const rows = state.history.slice().reverse().map(h => `
+  const rows = state.history.map(h => `
     <tr>
       <td>${h.month}</td>
       <td>${h.units} ${state.business.unit}${h.units === 1 ? '' : 's'}</td>
       <td>${fmtWhole(h.revenue)}</td>
+      <td>${fmtWhole(h.cogs)}</td>
       <td class="${h.net < 0 ? 'neg' : 'pos'}">${fmtWhole(h.net)}</td>
+      <td>${marginPct(h.net, h.revenue)}</td>
       <td>${fmtWhole(h.cashAfter)}</td>
     </tr>
   `).join('');
+
+  const sumUnits = state.history.reduce((s,h)=>s+h.units,0);
+  const sumRevenue = state.history.reduce((s,h)=>s+h.revenue,0);
+  const sumCogs = state.history.reduce((s,h)=>s+h.cogs,0);
+  const sumNet = state.history.reduce((s,h)=>s+h.net,0);
+  const totalsRow = state.history.length > 0 ? `
+    <tr class="total-row">
+      <td>Total</td>
+      <td>${sumUnits} ${state.business.unit}${sumUnits === 1 ? '' : 's'}</td>
+      <td>${fmtWhole(sumRevenue)}</td>
+      <td>${fmtWhole(sumCogs)}</td>
+      <td class="${sumNet < 0 ? 'neg' : 'pos'}">${fmtWhole(sumNet)}</td>
+      <td>${marginPct(sumNet, sumRevenue)}</td>
+      <td>${fmtWhole(state.cash)}</td>
+    </tr>` : '';
 
   return `
     <div class="wrap board-wrap">
@@ -636,8 +655,8 @@ function renderBoard() {
 
       ${state.history.length > 0 ? `
       <table class="ledger">
-        <thead><tr><th>Month</th><th>Sold</th><th>Revenue</th><th>Net</th><th>Cash after</th></tr></thead>
-        <tbody>${rows}</tbody>
+        <thead><tr><th>Month</th><th>Sold</th><th>Revenue</th><th>Cost</th><th>Net</th><th>Margin %</th><th>Cash in Hand</th></tr></thead>
+        <tbody>${rows}${totalsRow}</tbody>
       </table>` : `<p class="section-lede">Month one is about to start. Whatever happens, you'll see exactly why.</p>`}
 
       <button class="btn-primary" onclick="nextMonth()" ${state.month >= 12 ? 'disabled' : ''}>
@@ -666,9 +685,22 @@ function renderReport() {
       <td>${h.month}</td>
       <td>${h.units} ${state.business.unit}${h.units === 1 ? '' : 's'}</td>
       <td>${fmtWhole(h.revenue)}</td>
+      <td>${fmtWhole(h.cogs)}</td>
       <td class="${h.net < 0 ? 'neg' : 'pos'}">${fmtWhole(h.net)}</td>
+      <td>${marginPct(h.net, h.revenue)}</td>
     </tr>
   `).join('');
+  const sumUnitsR = state.history.reduce((s,h)=>s+h.units,0);
+  const annualMargin = marginPct(totalNet, totalRevenue);
+  const totalsRowR = `
+    <tr class="total-row">
+      <td>Total</td>
+      <td>${sumUnitsR} ${state.business.unit}${sumUnitsR === 1 ? '' : 's'}</td>
+      <td>${fmtWhole(totalRevenue)}</td>
+      <td>${fmtWhole(totalCogs)}</td>
+      <td class="${totalNet < 0 ? 'neg' : 'pos'}">${fmtWhole(totalNet)}</td>
+      <td>${annualMargin}</td>
+    </tr>`;
 
   const agencies = [...state.agenciesUsed];
   const agencyChips = agencies.length > 0
@@ -730,8 +762,8 @@ function renderReport() {
           <h3>Financial plan</h3>
           <p><strong>The year, month by month</strong></p>
           <table class="ledger">
-            <thead><tr><th>Month</th><th>Sold</th><th>Revenue</th><th>Net</th></tr></thead>
-            <tbody>${rows}</tbody>
+            <thead><tr><th>Month</th><th>Sold</th><th>Revenue</th><th>Cost</th><th>Net</th><th>Margin %</th></tr></thead>
+            <tbody>${rows}${totalsRowR}</tbody>
           </table>
 
           <p style="margin-top:18px;"><strong>Cost forecast, year one</strong></p>
@@ -747,6 +779,7 @@ function renderReport() {
             <tr><td>Total revenue</td><td>${fmtWhole(totalRevenue)}</td></tr>
             <tr><td>Total costs</td><td>${fmtWhole(totalCogs + totalStaffCost + totalOneOff)}</td></tr>
             <tr class="total-row"><td>Net profit / (loss)</td><td class="${totalNet<0?'neg':'pos'}">${fmtWhole(totalNet)}</td></tr>
+            <tr><td>Annual margin</td><td>${annualMargin}</td></tr>
           </table>
 
           <div class="report-callout" style="margin-top:14px;">
@@ -814,6 +847,16 @@ function renderReport() {
           <p>A twelve-month playthrough can generate real numbers, but a genuine business plan has a few sections no simulation can fill in for you: a proper market analysis, a competitor analysis, the full SWOT, a marketing strategy and budget, a list of assets held and planned, and business continuity planning. The official New Zealand business plan template at <strong>business.govt.nz</strong> covers all of these, worth a look before taking this further for real.</p>
         </div>
 
+        <div class="report-section">
+          <h3>How this compares</h3>
+          <p>This business finished the year at a ${annualMargin} net margin. ${CATEGORY_BENCHMARKS[state.business.category].note} A commonly cited range for ${state.business.category.toLowerCase()} businesses in New Zealand is ${CATEGORY_BENCHMARKS[state.business.category].range}, with 10% considered an average small business margin overall, 15&ndash;20% good, and above 20% excellent, regardless of category.</p>
+          <p>For scale: New Zealand has roughly 612,000 businesses, 97% of them small, with fewer than 20 employees. That is the general size of the field this business would be competing in, not a market size for this specific idea, real market sizing is exactly the kind of research a genuine market analysis would need to do.</p>
+        </div>
+
+        <div class="report-section disclosure-block">
+          <p>This game is made for learning and testing purposes. These figures cannot be used as actual values for any real business. Before acting on anything in this plan, talk to a financial advisor or a qualified business professional.</p>
+        </div>
+
         <div class="report-actions no-print">
           <button class="btn-primary" onclick="window.print()">Save as PDF</button>
           <button class="btn-secondary" onclick="restartGame()">Play again</button>
@@ -829,20 +872,30 @@ function eventModalHtml(event) {
   const monthData = state.history[state.history.length - 1];
   const u = state.business.unit;
   const plural = monthData.units === 1 ? '' : 's';
-  const lines = [];
-  lines.push(`${monthData.units} ${u}${plural} &times; ${fmtUnit(state.business.pricePerUnit)} = <strong>${fmtWhole(monthData.revenue)}</strong> revenue`);
-  lines.push(`${monthData.units} ${u}${plural} &times; ${fmtUnit(state.business.costPerUnit)} = <strong>${fmtWhole(monthData.cogs)}</strong> cost of goods`);
-  if (monthData.staffCost > 0) lines.push(`&minus; ${fmtWhole(monthData.staffCost)} staffing`);
-  if (monthData.oneOff > 0) lines.push(`&minus; ${fmtWhole(monthData.oneOff)} from this event`);
-  if (monthData.cashDelta > 0) lines.push(`+ ${fmtWhole(monthData.cashDelta)} from this event`);
+  const margin = marginPct(monthData.net, monthData.revenue);
+
+  const rows = [];
+  rows.push({ label: 'Revenue', working: `${monthData.units} ${u}${plural} &times; ${fmtUnit(state.business.pricePerUnit)}`, amount: fmtWhole(monthData.revenue), sign: '' });
+  rows.push({ label: 'Cost of Goods', working: `${monthData.units} ${u}${plural} &times; ${fmtUnit(state.business.costPerUnit)}`, amount: fmtWhole(monthData.cogs), sign: '&minus;' });
+  if (monthData.staffCost > 0) rows.push({ label: 'Staffing', working: 'flat cost, whether business is good or quiet', amount: fmtWhole(monthData.staffCost), sign: '&minus;' });
+  if (monthData.oneOff > 0) rows.push({ label: 'This event', working: event.title, amount: fmtWhole(monthData.oneOff), sign: '&minus;' });
+  if (monthData.cashDelta > 0) rows.push({ label: 'This event', working: event.title, amount: fmtWhole(monthData.cashDelta), sign: '+' });
+
+  const tableRows = rows.map(r => `
+    <tr>
+      <td class="calc-td-label">${r.label}</td>
+      <td class="calc-td-working">${r.working}</td>
+      <td class="calc-td-amount">${r.sign}${r.amount}</td>
+    </tr>
+  `).join('');
 
   return `
     <span class="modal-kicker">Month ${state.month}</span>
     <h3>${event.title}</h3>
     <p>${event.desc}</p>
     <div class="calc-block">
-      ${lines.map(l => `<div class="calc-line">${l}</div>`).join('')}
-      <div class="calc-line calc-total">= ${fmtWhole(monthData.net)} net this month</div>
+      <div class="calc-line calc-total">Net this month: ${fmtWhole(monthData.net)} <span class="calc-margin-tag">${margin} margin</span></div>
+      <table class="calc-table">${tableRows}</table>
     </div>
     <button class="btn-primary" onclick="advanceModal()">Continue</button>
   `;
@@ -1046,6 +1099,7 @@ function restartGame() {
 }
 
 // ============ INIT ============
+document.getElementById('build-footer').textContent = `Auaha ${GAME_VERSION} — Made in NZ`;
 render();
 </script>
 </body>
@@ -1054,7 +1108,6 @@ render();
 
 
 def save_game(output_path="Auaha_Game.html"):
-    """Write the embedded game out to a standalone HTML file."""
     with open(output_path, "w", encoding="utf-8") as f:
         f.write(AUAHA_GAME_HTML)
     print(f"Saved playable game to {output_path}")
